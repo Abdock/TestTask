@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TestTask.DTO;
 using TestTask.Interfaces;
 using TestTask.Models;
+using TaskStatus = TestTask.Models.TaskStatus;
 
 namespace TestTask.Controllers;
 
@@ -164,6 +165,94 @@ public class ProjectController : Controller
         }
 
         _database.Remove(task);
+        await _database.SaveChangesAsync();
+
+        return Ok();
+    }
+
+    [HttpGet]
+    [Route("start/{id:int}")]
+    public async Task<ActionResult> StartProject([FromRoute] int id)
+    {
+        var project = await _database.Projects.FirstOrDefaultAsync(project => project.Id == id);
+
+        if (project == null)
+        {
+            return NotFound(new {errorText = "Project by given id not found"});
+        }
+        
+        project.Status = ProjectStatus.Active;
+        _database.Update(project);
+        await _database.SaveChangesAsync();
+
+        return Ok();
+    }
+    
+    [HttpGet]
+    [Route("start/{projectId:int}/tasks/{taskId:int}")]
+    public async Task<ActionResult> StartTask([FromRoute] int projectId, [FromRoute] int taskId)
+    {
+        var project = await _database.Projects.Where(project => project.Id == projectId)
+            .Include(project => project.Tasks).FirstOrDefaultAsync();
+
+        if (project == null)
+        {
+            return NotFound(new {errorText = "Project by given id not found"});
+        }
+
+        var task = project.Tasks.FirstOrDefault(task => task.Id == taskId);
+        
+        if (task == null)
+        {
+            return NotFound(new {errorText = "Task by given id not found"});
+        }
+        
+        task.Status = TaskStatus.InProgress;
+        _database.Update(task);
+        await _database.SaveChangesAsync();
+
+        return Ok();
+    }
+    
+    [HttpGet]
+    [Route("complete/{id:int}")]
+    public async Task<ActionResult> CompleteProject([FromRoute] int id)
+    {
+        var project = await _database.Projects.FirstOrDefaultAsync(project => project.Id == id);
+
+        if (project == null)
+        {
+            return NotFound(new {errorText = "Project by given id not found"});
+        }
+        
+        project.Status = ProjectStatus.Completed;
+        _database.Update(project);
+        await _database.SaveChangesAsync();
+
+        return Ok();
+    }
+    
+    [HttpGet]
+    [Route("complete/{projectId:int}/tasks/{taskId:int}")]
+    public async Task<ActionResult> CompleteTask([FromRoute] int projectId, [FromRoute] int taskId)
+    {
+        var project = await _database.Projects.Where(project => project.Id == projectId)
+            .Include(project => project.Tasks).FirstOrDefaultAsync();
+
+        if (project == null)
+        {
+            return NotFound(new {errorText = "Project by given id not found"});
+        }
+
+        var task = project.Tasks.FirstOrDefault(task => task.Id == taskId);
+        
+        if (task == null)
+        {
+            return NotFound(new {errorText = "Task by given id not found"});
+        }
+        
+        task.Status = TaskStatus.Done;
+        _database.Update(task);
         await _database.SaveChangesAsync();
 
         return Ok();
